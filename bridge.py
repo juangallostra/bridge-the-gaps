@@ -13,15 +13,16 @@ def obtain_groups(image, threshold, structuring_el):
     image_logical = (image[:, :, 1] < threshold).astype(np.int)
     return scipy.ndimage.measurements.label(image_logical, structure=structuring_el)
 
+
 def swap_colors(image, original_color, new_color):
     """
+    Swap all the pixels of a specific color by another color 
     """
-    # change white by red
-    r1, g1, b1 = original_color # RGB value to be replaced
-    r2, g2, b2 = new_color # New RGB value
-    red, green, blue = image[:,:,0], image[:,:,1], image[:,:,2]
+    r1, g1, b1 = original_color  # RGB value to be replaced
+    r2, g2, b2 = new_color  # New RGB value
+    red, green, blue = image[:, :, 0], image[:, :, 1], image[:, :, 2]
     mask = (red == r1) & (green == g1) & (blue == b1)
-    image[:,:,:3][mask] = [r2, g2, b2]
+    image[:, :, :3][mask] = [r2, g2, b2]
     return image
 
 
@@ -36,10 +37,10 @@ def main(image_path=None):
         im = Image.open("images/"+image_name).convert("RGBA")
         image = np.array(im)
 
-        image = swap_colors(image, (255, 255, 255) , (255, 0, 0))
+        image = swap_colors(image, (255, 255, 255), (255, 0, 0))
 
         # create structuring element to determine unconnected groups of pixels in image
-        s = scipy.ndimage.morphology.generate_binary_structure(2,2)
+        s = scipy.ndimage.morphology.generate_binary_structure(2, 2)
 
         for i in np.ndindex(image.shape[:2]):
             # skip black pixels
@@ -51,7 +52,7 @@ def main(image_path=None):
             if num_groups != 1:
                 image[i[0], i[1]] = [255, 0, 0, 255]
             # Show percentage
-            print ((i[1] + i[0]*im.size[0])/(im.size[0]*im.size[1]))
+            print((i[1] + i[0]*im.size[0])/(im.size[0]*im.size[1]))
 
         # Number of red pixels
         red_p = 0
@@ -66,16 +67,17 @@ def main(image_path=None):
             if num_groups != 1:
                 image[j[0], j[1]] = [255, 0, 0, 255]
             # Show percentage
-            print ((j[1] + j[0]*im.size[0])/(im.size[0]*im.size[1]))
+            print((j[1] + j[0]*im.size[0])/(im.size[0]*im.size[1]))
             red_p += (sum(image[j[0], j[1]]) == 255*2)
 
         print(red_p)
         f.write("r_"+image_name+": "+str(red_p)+"\n")
 
         im = Image.fromarray(image)
-        #im.show()
+        # im.show()
         im.save("r_"+image_name)
     f.close()
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
