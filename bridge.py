@@ -1,41 +1,75 @@
-
 import sys
+import os
+
 from PIL import Image
 import numpy as np
 import scipy.ndimage
 
 
-def obtain_groups(image, threshold, structuring_element):
+def obtain_groups(image, threshold, structuring_el):
     """
-    Obtain groups of unconnected pixels
+    Obtain isles of unconnected pixels via a threshold on the R channel
     """
-    image_logical = (image[:, :, 0] < threshold).astype(np.int)
-    return scipy.ndimage.measurements.label(image_logical, structure=structuring_element)
+    image_logical = (image[:, :, 1] < threshold).astype(np.int)
+    return scipy.ndimage.measurements.label(image_logical, structure=structuring_el)
 
-def find_shortest_distance(groups):
-    """
-    Find shortest distance between all groups
-    """
+def main(image_path=None):
+    images = os.listdir("images")
+    f = open("results.txt", "w")
+    if image_path is not None:
+        images = [image_path]
+    for image_name in images:
+        im = Image.open("images/"+image_name).convert("RGBA")
+        image = np.array(im)
 
-def connect_groups(shortest_distance):
-    """
-    Connect two groups
-    """
+        # change white by red
+        r1, g1, b1 = 255, 255, 255 # RGB value to be replaced
+        r2, g2, b2 = 255, 0, 0 # New RGB value
+        red, green, blue = image[:,:,0], image[:,:,1], image[:,:,2]
+        mask = (red == r1) & (green == g1) & (blue == b1)
+        image[:,:,:3][mask] = [r2, g2, b2]
 
-def main(image):
-    """
-    """
-    # Open image and set black pixels to 1 and white pixels to 0
-    image = np.asarray(Image.open(image))
-    # create structuring element to determine unconnected groups of pixels in image
-    s = scipy.ndimage.morphology.generate_binary_structure(2,2)
-    # label the different groups, considering diagonal connections as valid
-    groups, num_groups = obtain_groups(image, 255, s)
-    while (num_groups):
-    #     shortest_distance = find_shortest_distance(groups)
-    #     image = connect_groups(shortest_distance)
-        groups, num_groups = obtain_groups(image, s)
-    # return image
+        # create structuring element to determine unconnected groups of pixels in image
+        s = scipy.ndimage.morphology.generate_binary_structure(2,2)
+
+        for i in np.ndindex(image.shape[:2]):
+            # skip black pixels
+            if sum(image[i[0], i[1]]) == 255:
+                continue
+            image[i[0], i[1]] = [255, 255, 255, 255]
+            # label the different groups, considering diagonal connections as valid
+            groups, num_groups = obtain_groups(image, 255, s)
+            if num_groups != 1:
+                image[i[0], i[1]] = [255, 0, 0, 255]
+            # Show percentage
+            print ((i[1] + i[0]*im.size[0])/(im.size[0]*im.size[1]))
+
+        # Number of red pixels
+        red_p = 0
+        for i in np.ndindex(image.shape[:2]):
+            j = (im.size[0] - i[0] - 1, im.size[1] - i[1] - 1)
+            # skip black pixels
+            if sum(image[j[0], j[1]]) == 255:
+                continue
+            image[j[0], j[1]] = [255, 255, 255, 255]
+            # label the different groups, considering diagonal connections as valid
+            groups, num_groups = obtain_groups(image, 255, s)
+            if num_groups != 1:
+                image[j[0], j[1]] = [255, 0, 0, 255]
+            # Show percentage
+            print ((j[1] + j[0]*im.size[0])/(im.size[0]*im.size[1]))
+            red_p += (sum(image[j[0], j[1]]) == 255*2)
+
+        print(red_p)
+        f.write("r_"+image_name+": "+str(red_p)+"\n")
+
+        im = Image.fromarray(image)
+        #im.show()
+        im.save("r_"+image_name)
+    f.close()
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    if len(sys.argv) == 2:
+        main(sys.argv[1])
+    else:
+        main()
