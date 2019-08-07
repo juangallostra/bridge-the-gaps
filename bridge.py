@@ -13,21 +13,30 @@ def obtain_groups(image, threshold, structuring_el):
     image_logical = (image[:, :, 1] < threshold).astype(np.int)
     return scipy.ndimage.measurements.label(image_logical, structure=structuring_el)
 
+def swap_colors(image, original_color, new_color):
+    """
+    """
+    # change white by red
+    r1, g1, b1 = original_color # RGB value to be replaced
+    r2, g2, b2 = new_color # New RGB value
+    red, green, blue = image[:,:,0], image[:,:,1], image[:,:,2]
+    mask = (red == r1) & (green == g1) & (blue == b1)
+    image[:,:,:3][mask] = [r2, g2, b2]
+    return image
+
+
 def main(image_path=None):
     images = os.listdir("images")
     f = open("results.txt", "w")
+
     if image_path is not None:
         images = [image_path]
+
     for image_name in images:
         im = Image.open("images/"+image_name).convert("RGBA")
         image = np.array(im)
 
-        # change white by red
-        r1, g1, b1 = 255, 255, 255 # RGB value to be replaced
-        r2, g2, b2 = 255, 0, 0 # New RGB value
-        red, green, blue = image[:,:,0], image[:,:,1], image[:,:,2]
-        mask = (red == r1) & (green == g1) & (blue == b1)
-        image[:,:,:3][mask] = [r2, g2, b2]
+        image = swap_colors(image, (255, 255, 255) , (255, 0, 0))
 
         # create structuring element to determine unconnected groups of pixels in image
         s = scipy.ndimage.morphology.generate_binary_structure(2,2)
@@ -47,9 +56,9 @@ def main(image_path=None):
         # Number of red pixels
         red_p = 0
         for i in np.ndindex(image.shape[:2]):
-            j = (im.size[0] - i[0] - 1, im.size[1] - i[1] - 1)
-            # skip black pixels
-            if sum(image[j[0], j[1]]) == 255:
+            j = (im.size[1] - i[0] - 1, im.size[0] - i[1] - 1)
+            # skip black and white pixels
+            if sum(image[j[0], j[1]]) == 255 or sum(image[j[0], j[1]]) == 255*4:
                 continue
             image[j[0], j[1]] = [255, 255, 255, 255]
             # label the different groups, considering diagonal connections as valid
