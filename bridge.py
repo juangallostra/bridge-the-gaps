@@ -1,3 +1,5 @@
+# This is an answer to: https://codegolf.stackexchange.com/questions/189277/bridge-the-gaps
+
 import sys
 import os
 
@@ -27,6 +29,30 @@ def swap_colors(image, original_color, new_color):
 
 
 def main(image_path=None):
+    """
+    For each processed image, we begin by changing the color 
+    of all the white pixels in an image to red. By doing this,
+    it is guaranteed that all the elements (any isle of black 
+    pixels) are connected.
+
+    Then, we iterate over all the pixels in the image starting 
+    from the top left corner and moving right and down. For every
+    red pixel we find we change its color to white. If after this
+    change of color there is still only one element (an element 
+    being now any isle of black and red pixels), we leave the pixel
+    white and move on to the next pixel. However, if after the 
+    color change from red to white the number of elements is bigger
+    than one, we leave the pixel red and move on to the next pixel.
+
+    The connections obtained by only using this method show a regular
+    pattern and in some cases, there are unnecessary red pixels.
+
+    This extra red pixels can be easily removed by iterating again over
+    the image and performing the same operations as explained above but
+    from the bottom right corner to the top left corner. This second 
+    pass is much faster since the amount of red pixels that have to be
+    checked.
+    """
     images = os.listdir("images")
     f = open("results.txt", "w")
 
